@@ -95,27 +95,45 @@ function parseIp () {
 	var ipReg = /((?:(?:25[0-5]|2[0-4]\d|[01]?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d?\d))/g;
 	if(!document.body.innerHTML.match(ipReg)){console.log('have not find ip.');return;}
 	document.body.innerHTML = document.body.innerHTML.replace(ipReg,'<span style="color:red" class="ip" id="ip$1">$1</span>');
-	dojo.query('.ip').forEach(function(node) {
-		tooltip({
-			// id:'ip'+(node.id?node.id.replace('.','_'):''),
-			connectId:node,
-			label:node.innerHTML,
-			getContent:function(){
-				var ip = node.innerHTML;
-				var id = 'query_ip'+ip;
-				var html =  '<span id="'+id+'">正在查询:'+node.innerHTML+"&nbsp;<a><img src='http://dealtao.cn/images/loading.gif'/></a></span>";
-				require(["dojo/request/script"], function(script){
-				  window.fYodaoCallBack = function(code,data){console.log(data);
-				  	dojo.byId(id).innerHTML = "IP:["+data.ip+"]<br/>来自:"+data.location;
-				  }
-				  script.get("http://www.youdao.com/smartresult-xml/search.s?jsFlag=true&keyfrom=163.com&type=ip", 
-				  	{query:{q:ip,event:'fYodaoCallBack'}});
-				});
-				return html;
-			},
-			onShow:function(node){
-			}
+	function getIps(){
+		return dojo.query('.ip');
+	}
+
+	function uptIpInfo(node,id,ip){
+		require(["dojo/request/script"], function(script){
+		window.fYodaoCallBack = function(code,data){console.log(data);
+				dijit.byId(id).show("IP:["+data.ip+"]<br/>来自:"+data.location,node);
+		}
+		script.get("http://www.youdao.com/smartresult-xml/search.s?jsFlag=true&keyfrom=163.com&type=ip", 
+		  	{query:{q:ip,event:'fYodaoCallBack'}});
 		});
+	}
+
+	require(['dojo/on','dijit/Tooltip'],function(on,popup,TooltipDialog){
+		var ips = getIps();
+		ips.forEach(function(node) {
+			on(node,'mouseover',function(evt){
+				var ip = node.innerHTML;
+				var id = "ipInfo"+ip;
+				var tip = dijit.byId(id) || new dijit.Tooltip._MasterTooltip({id:id});
+				dojo.attr(node,'tipId',id);
+				tip.show('<span id="'+id+'">正在查询:'+ip
+					+"&nbsp;<a><img src='http://dealtao.cn/images/loading.gif'/></a></span>",node);
+				tip.on('hide',function(){this.hide(node);});
+				uptIpInfo(node,id,ip);
+			});
+		});
+		window.showAll = function(isShow){
+			ips.forEach(function(node){
+				var tipId = dojo.attr(node,'tipId');
+				if(tipId){
+					var tip = dijit.byId(tipId);
+					if(tip){
+						if(isShow){on.emit(node,'mouseover',{bubbles: true,cancelable: true});}else {tip.hide(node);};
+					}
+				}
+			});
+		}
 	});
 }
 
@@ -124,6 +142,10 @@ function tooltip (cfg) {
 	   var tip = new Tooltip(cfg);
 	   //if(cfg.connectId)require(["dojo/NodeList-data"],function(){dojo.query(cfg.connectId).data('tooltip',tip);});
 	});
+}
+
+function tooltipDlg(node,ip){
+	var tipDlg = new TooltipDialog({content:'<span id="'+id+'">正在查询:'+node.innerHTML+"&nbsp;<a><img src='http://dealtao.cn/images/loading.gif'/></a></span>"});
 }
 
 function gDirectLink (dj) {
