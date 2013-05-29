@@ -58,6 +58,7 @@ function globalCallBackWithDojo(executeFuns){
 	console.log(dojo);
 	console.log('xxxxxx');
 	dojo.addClass(dojo.query('body')[0],'claro');
+
 	dojo.forEach(executeFuns,function(executeFun){
 		console.log('执行方法'+executeFun.name);
 		executeFun();
@@ -77,8 +78,8 @@ if(typeof dojo==="undefined"){//js文件是否正常引入判断
 	var requireFuns = [];
 	var executeFuns = [];
 	if(true||location.href.split('http://account.linkxing.cn/cli/index.php?r=site/syslogs').length==2){
-		requireFuns.push(tooltip);
 		requireFuns.push(parseIp);
+		requireFuns.push(extendMasterToolTip);
 		executeFuns.push(parseIp.name);
 	}
 	// console.log('requireFuns')
@@ -113,7 +114,8 @@ function parseIp () {
 	}
 
 	function getTipByNode(node){
-		var tip = dijit.byId(dojo.attr(node,'tipId'))||new dijit.Tooltip._MasterTooltip();
+		if(!dijit.CustMasterTooltip){extendMasterToolTip();}
+		var tip = dijit.byId(dojo.attr(node,'tipId'))||new dijit.CustMasterTooltip();
 		var tipId = tip.id;
 		dojo.attr(node,'tipId',tipId);
 		return tip;
@@ -129,7 +131,7 @@ function parseIp () {
 		uptIpInfo(node,id,ip,tip);
 	}
 
-	require(['dojo/on','dijit/Tooltip'],function(on,popup,TooltipDialog){
+	require(['dojo/on','dijit/Tooltip'],function(on,popup,Tooltip){
 		var ips = getIps();
 		ips.forEach(function(node) {
 			on(node,'mouseover',function(evt){
@@ -147,15 +149,34 @@ function parseIp () {
 	});
 }
 
+function extendMasterToolTip(){
+	require([
+	    "dojo/_base/declare",
+	    "dojo/dom-geometry",
+	    "dijit/Tooltip",
+	], function(declare, geom){
+	    var CustToolTip = declare("dijit.CustMasterTooltip", dijit.Tooltip._MasterTooltip, {
+	        label: "My custMasterTooltip",
+	        targetNode:null,
+	        show: function(innerHTML,node){
+	            console.log("bob.custMasterTooltip show"+this.label);
+	            this.targetNode = node;
+	            this.inherited(arguments);
+				var position = geom.position(node,true);
+				console.log(position);
+				console.log(this.domNode);
+				geom.position(this.domNode,true);
+				// dojo.style(this.domNode,'')
+	        }
+	    });
+	});
+}
+
 function tooltip (cfg) {
 	require(["dijit/Tooltip", "dojo/domReady!"], function(Tooltip){
 	   var tip = new Tooltip(cfg);
 	   //if(cfg.connectId)require(["dojo/NodeList-data"],function(){dojo.query(cfg.connectId).data('tooltip',tip);});
 	});
-}
-
-function tooltipDlg(node,ip){
-	var tipDlg = new TooltipDialog({content:'<span id="'+id+'">正在查询:'+node.innerHTML+"&nbsp;<a><img src='http://dealtao.cn/images/loading.gif'/></a></span>"});
 }
 
 function gDirectLink (dj) {
