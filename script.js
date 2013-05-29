@@ -93,44 +93,53 @@ if(typeof dojo==="undefined"){//js文件是否正常引入判断
 
 function parseIp () {
 	var ipReg = /((?:(?:25[0-5]|2[0-4]\d|[01]?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d?\d))/g;
-	if(!document.body.innerHTML.match(ipReg)){console.log('have not find ip.');return;}
+	if(!document.body.innerText.match(ipReg)){console.log('have not find ip.');return;}
 	document.body.innerHTML = document.body.innerHTML.replace(ipReg,'<span style="color:red" class="ip" id="ip$1">$1</span>');
 	function getIps(){
 		return dojo.query('.ip');
 	}
 
-	function uptIpInfo(node,id,ip){
+	function uptIpInfo(node,id,ip,tip){
 		require(["dojo/request/script"], function(script){
-		window.fYodaoCallBack = function(code,data){console.log(data);
-				dijit.byId(id).show("IP:["+data.ip+"]<br/>来自:"+data.location,node);
+		var backFunName = 'fYodaoCallBack'+id.replace(/\./g,'_');
+		window[backFunName] = function(code,data){console.log(data);
+				tip = getTipByNode(node);
+				tip.show("IP:["+data.ip+"]<br/>来自:"+data.location,node);
 		}
 		script.get("http://www.youdao.com/smartresult-xml/search.s?jsFlag=true&keyfrom=163.com&type=ip", 
-		  	{query:{q:ip,event:'fYodaoCallBack'}});
+		  	{query:{q:ip,event:backFunName}});
 		});
+	}
+
+	function getTipByNode(node){
+		var tip = dijit.byId(dojo.attr(node,'tipId'))||new dijit.Tooltip._MasterTooltip();
+		var tipId = tip.id;
+		dojo.attr(node,'tipId',tipId);
+		return tip;
+	}
+
+	function showIpTip(node){
+		var ip = node.innerHTML;
+		var id = "ipInfo"+ip;
+		var tip = getTipByNode(node);
+		tip.show('<span id="'+id+'">正在查询:'+ip
+			+"&nbsp;<a><img src='http://dealtao.cn/images/loading.gif'/></a></span>",node);
+		tip.on('click',function(){this.hide(node);});
+		uptIpInfo(node,id,ip,tip);
 	}
 
 	require(['dojo/on','dijit/Tooltip'],function(on,popup,TooltipDialog){
 		var ips = getIps();
 		ips.forEach(function(node) {
 			on(node,'mouseover',function(evt){
-				var ip = node.innerHTML;
-				var id = "ipInfo"+ip;
-				var tip = dijit.byId(id) || new dijit.Tooltip._MasterTooltip({id:id});
-				dojo.attr(node,'tipId',id);
-				tip.show('<span id="'+id+'">正在查询:'+ip
-					+"&nbsp;<a><img src='http://dealtao.cn/images/loading.gif'/></a></span>",node);
-				tip.on('click',function(){this.hide(node);});
-				uptIpInfo(node,id,ip);
+				showIpTip(node);
 			});
 		});
 		window.showAll = function(isShow){
 			ips.forEach(function(node){
-				var tipId = dojo.attr(node,'tipId');
-				if(tipId){
-					var tip = dijit.byId(tipId);
-					if(tip){
-						if(isShow){on.emit(node,'mouseover',{bubbles: true,cancelable: true});}else {tip.hide(node);};
-					}
+				var tip = getTipByNode(node);
+				if(tip){
+					if(isShow){showIpTip(node);}else {tip.hide(node);};
 				}
 			});
 		}
