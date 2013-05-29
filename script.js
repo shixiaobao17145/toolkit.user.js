@@ -119,7 +119,7 @@ function parseIp () {
 				dojo.attr(node,'tipId',id);
 				tip.show('<span id="'+id+'">正在查询:'+ip
 					+"&nbsp;<a><img src='http://dealtao.cn/images/loading.gif'/></a></span>",node);
-				tip.on('hide',function(){this.hide(node);});
+				tip.on('click',function(){this.hide(node);});
 				uptIpInfo(node,id,ip);
 			});
 		});
