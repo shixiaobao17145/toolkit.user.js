@@ -101,9 +101,10 @@ function parseIp () {
 
 	function uptIpInfo(node,id,ip,tip){
 		require(["dojo/request/script"], function(script){
-		var backFunName = 'fYodaoCallBack'+id.replace(/\./g,'_');
+	    tip = tip||getTipByNode(node);
+		var backFunName = 'fYodaoCallBack'+tip.id;
 		window[backFunName] = function(code,data){console.log(data);
-				tip = getTipByNode(node);
+				//tip = getTipByNode(node);
 				tip.show("IP:["+data.ip+"]<br/>来自:"+data.location,node);
 		}
 		script.get("http://www.youdao.com/smartresult-xml/search.s?jsFlag=true&keyfrom=163.com&type=ip", 
